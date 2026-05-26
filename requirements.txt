@@ -1,4 +1,7 @@
-
 streamlit
 pandas
 scikit-learn
+sentence-transformers
+pdfplumber
+python-docx
+requests

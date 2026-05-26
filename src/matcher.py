@@ -1,45 +1,47 @@
-import re
+from sklearn.feature_extraction.text import (
+    TfidfVectorizer
+)
 
-# Define important skills
-SKILLS = [
-    "python", "sql", "machine learning", "excel", "ml", "analytics",
-    "power bi", "tableau", "statistics", "nlp", "tableau", "pyspark", "genai"
-]
-
-
-def extract_skills(text):
-    text = text.lower()
-
-    skills_found = set()
-
-    for skill in SKILLS:
-        # split multi-word skills
-        if " " in skill:
-            if all(word in text for word in skill.split()):
-                skills_found.add(skill)
-        else:
-            if skill in text:
-                skills_found.add(skill)
-
-    return skills_found
+from sklearn.metrics.pairwise import (
+    cosine_similarity
+)
 
 
-def keyword_score(resume, jd):
-    resume_skills = extract_skills(resume)
-    jd_skills = extract_skills(jd)
+def compute_similarity(
+    resume_text,
+    jobs_df
+):
 
-    if not jd_skills:
-        return 0
+    job_descriptions = jobs_df[
+        "description"
+    ].fillna("").tolist()
 
-    match_count = len(resume_skills & jd_skills)
-    return match_count / len(jd_skills)
+    documents = [
+        resume_text
+    ] + job_descriptions
 
-def skill_gap(resume, jd):
-    resume_skills = extract_skills(resume)
-    jd_skills = extract_skills(jd)
+    vectorizer = TfidfVectorizer(
+        stop_words="english"
+    )
 
-    print("RESUME:", resume_skills)
-    print("JD:", jd_skills)
+    tfidf_matrix = vectorizer.fit_transform(
+        documents
+    )
 
-    missing = jd_skills - resume_skills
-    return list(missing)
+    resume_vector = tfidf_matrix[0]
+
+    job_vectors = tfidf_matrix[1:]
+
+    scores = cosine_similarity(
+        resume_vector,
+        job_vectors
+    )[0]
+
+    jobs_df["match_score"] = scores
+
+    jobs_df = jobs_df.sort_values(
+        by="match_score",
+        ascending=False
+    )
+
+    return jobs_df
