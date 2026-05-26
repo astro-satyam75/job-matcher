@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import streamlit as st
-
+from bs4 import BeautifulSoup
 
 @st.cache_data(ttl=3600)
 def fetch_remote_jobs():
@@ -31,6 +31,16 @@ def fetch_remote_jobs():
         if not title:
             continue
 
+        raw_description = item.get(
+            "description",
+            ""
+        )
+
+        clean_description = BeautifulSoup(
+            raw_description,
+            "html.parser"
+        ).get_text(separator=" ")
+
         jobs.append({
 
             "title": title,
@@ -45,15 +55,10 @@ def fetch_remote_jobs():
                 "Remote"
             ),
 
-            "description": item.get(
-                "description",
-                ""
-            ),
+            "description": clean_description,
 
             "apply_link": item.get(
                 "url",
                 ""
             )
         })
-
-    return pd.DataFrame(jobs)
